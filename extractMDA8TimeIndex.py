@@ -3,6 +3,7 @@ import netCDF4 as nc
 
 ####################################更新备注#################################
 # 1.16 完成数据提取模块，完成维数转化模块，完成MDA8计算模块,完成MDA8索引提取模块
+#   应该把每天分成24+7个小时!!!   但是这样搞的话会存在很多问题，包括越界的问题和格式不匹配的问题
 
 def prep_var(path, filename):
     data = nc.Dataset(path + filename)
@@ -46,16 +47,23 @@ def cal_mda8(var_4d):
     for col in range(192):
         for row in range(216):
             for day in range(31):
-                #print('NO.%d day'%day)
                 mda_8 = 0
                 mda8_list = []
-                for hour in range(16):
-                    #print('NO.%d hour'%hour)
-                    d8 = var_4d[day, hour:hour + 8, row, col]
-                    da8 = np.nanmean(d8)
-                    mda8_list.append(da8)                
-                    #if da8 >= mda_8:
-                        #mda_8 = da8
+                if day == 30:
+                    for hour in range(16):
+                        d8 = var_4d[day, hour:hour + 8, row, col]
+                        da8 = np.nanmean(d8)
+                        mda8_list.append(da8)  
+                else:
+                    for hour in range(24):
+                        if hour>16:
+                            d8_1 = var_4d[day, hour:24, row, col]
+                            d8_2 = var_4d[day + 1, 0:8 - (24 - hour),row,col]
+                            d8 = np.hstack((d8_1,d8_2))
+                        else:
+                            d8 = var_4d[day, hour:hour + 8, row, col]
+                        da8 = np.nanmean(d8)
+                        mda8_list.append(da8)                
                 mda8[day,row,col] = max(mda8_list)
                 time_index = mda8_list.index(max(mda8_list))
                 mda8_TimeInd[day,time_index:time_index + 8,row,col] = 1
