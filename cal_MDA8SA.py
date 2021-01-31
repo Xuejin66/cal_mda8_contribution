@@ -68,7 +68,7 @@ def mda8sa_2nc(mda8SA,nsector,nhour,nrow,ncol):
     fout.close()
 
 def mda8_2nc(mda8,nhour,nrow,ncol):
-    fout = nc.Dataset('mda8_SA.nc','w',format = 'NETCDF4')
+    fout = nc.Dataset('mda8_check.nc','w',format = 'NETCDF4')
     nday = nhour // 24 - 1
     fout.createDimension('day',nday)  
     fout.createDimension('row',nrow)   
@@ -87,8 +87,9 @@ def mda8_2nc(mda8,nhour,nrow,ncol):
     fout.close()
 
 def mda8SA_2nc(mda8SA,Variables,VariableNames,nhour,nrow,ncol):
+# def mda8SA_2nc(mda8SA,nhour,nrow,ncol):
     nday = nhour // 24 - 1
-    fout = nc.Dataset('mdaSA.nc','w',format = 'NETCDF4')
+    fout = nc.Dataset('mda8SA.nc','w',format = 'NETCDF4')
     fout.createDimension('day',nday)  
     fout.createDimension('species',2)  
     fout.createDimension('sector',nsector)  
@@ -122,15 +123,15 @@ def mda8SA_2nc(mda8SA,Variables,VariableNames,nhour,nrow,ncol):
   # 填写源解析的netCDF文件路径
 SAfilePath = '/data3/liuhanqing/projects/postproc/2.combine/output/201807_OSAT/'    
   # 填写源解析的netCDF文件名      
-SAfileName = 'camx.YRD4km.NOX_VOCs_new.201807.OSAT.sa.grd01.ncf'                          
- 
+# SAfileName = 'camx.YRD4km.NOX_VOCs_new.201807.OSAT.sa.grd01.ncf'                          
+SAfileName = 'camx.YRD4km.Suzhou_fin.201807.OSAT.sa.grd01.ncf' 
   # 填写上一个脚本计算出的mda8时间索引netCDF文件路径
 mda8IndPath = '/data/home/xuejin/code/python/'                                                                 
   # 填写上一个脚本计算出的mda8时间索引netCDF文件名
 mda8IndFileName = 'mda8Ind.nc'                                                            
   
   # 填写sector数、网格规格和源解析小时数
-nsector = 11
+nsector = 14
 nhour = 744                                                          
 nrow = 216
 ncol = 192
@@ -139,6 +140,9 @@ ncol = 192
 ###########################################
 #              MAIN PROGRAM               #
 ###########################################
+
+# data = nc.Dataset(SAfilePath + SAfileName)
+# nsector = (len(data.variables.keys()) - 2)/2
 
   # 准备数据，将模型源解析得到的netCDF文件中的各类变量同化到一个六维列表中(list)。
 pol_6d = prep_SAdata(SAfilePath,SAfileName,nsector,nhour,nrow,ncol)
@@ -149,8 +153,8 @@ mda8SA = cal_MDA8sa(pol_6d,mda8Ind,nsector,nhour,nrow,ncol)
   # 将未标记的解析结果写入netCDF文件中。
 mda8sa_2nc(mda8SA,nsector,nhour,nrow,ncol)
   # 分别按物种，人为源，天然源计算MDA8的贡献，得到标记后的源解析结果。
-mda8SA_NOx = np.sum(mda8SA[:,0,:,:,:],axis = 1)
-mda8SA_VOC = np.sum(mda8SA[:,1,:,:,:],axis = 1)
+mda8SA_NOx = np.sum(mda8SA[:,0,:13,:,:],axis = 1)
+mda8SA_VOC = np.sum(mda8SA[:,1,:13,:,:],axis = 1)
 mda8SA_IC = np.sum(mda8SA[:,:,0,:,:],axis = 1)
 mda8SA_BC = np.sum(mda8SA[:,:,1,:,:],axis = 1)
 mda8SA_PP = np.sum(mda8SA[:,:,2,:,:],axis = 1)
@@ -162,6 +166,10 @@ mda8SA_DU = np.sum(mda8SA[:,:,7,:,:],axis = 1)
 mda8SA_OP = np.sum(mda8SA[:,:,8,:,:],axis = 1)
 mda8SA_AR = np.sum(mda8SA[:,:,9,:,:],axis = 1)
 mda8SA_MEGAN = np.sum(mda8SA[:,:,10,:,:],axis = 1)
+mda8SA_R2 = np.sum(mda8SA[:,:,11,:,:],axis = 1)
+mda8SA_R3 = np.sum(mda8SA[:,:,12,:,:],axis = 1)
+mda8SA_R2R3 = np.sum(mda8SA[:,:,13,:,:],axis = 1)
+
   # 填写要标记的变量名(上下一致，个数 = nsector + 2)
 VariableNames = ['mda8SA_NOx','mda8SA_VOC',
           'mda8SA_IC','mda8SA_BC',
@@ -169,16 +177,20 @@ VariableNames = ['mda8SA_NOx','mda8SA_VOC',
           'mda8SA_PR','mda8SA_DO',
           'mda8SA_TR','mda8SA_DU',
           'mda8SA_OP','mda8SA_AR',
-          'mda8SA_MEGAN']
+          'mda8SA_MEGAN','mda8SA_R2',
+          'mda8SA_R3','mda8SA_R2R3']
 Variables =  [mda8SA_NOx,mda8SA_VOC,
                 mda8SA_IC,mda8SA_BC,
                 mda8SA_PP,mda8SA_IN,
                 mda8SA_PR,mda8SA_DO,
                 mda8SA_TR,mda8SA_DU,
                 mda8SA_OP,mda8SA_AR,
-                mda8SA_MEGAN]
+                mda8SA_MEGAN,mda8SA_R2,
+                mda8SA_R3,mda8SA_R2R3]
   # 将标记后的源解析结果写入netCDF文件中。
 mda8SA_2nc(mda8SA,Variables,VariableNames,nhour,nrow,ncol)
-mda8 = mda8SA_NOx + mda8SA_VOC
+
+# mda8 = mda8SA_NOx + mda8SA_VOC
+mda8 = mda8SA_IC + mda8SA_BC + mda8SA_PP + mda8SA_IN + mda8SA_PR + mda8SA_DO + mda8SA_TR + mda8SA_DU + mda8SA_OP + mda8SA_AR + mda8SA_MEGAN + mda8SA_R2 + mda8SA_R3
 mda8_2nc(mda8,nhour,nrow,ncol)
 

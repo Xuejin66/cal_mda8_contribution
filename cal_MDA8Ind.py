@@ -1,6 +1,5 @@
 import numpy as np
 import netCDF4 as nc
-import time
 import datetime
 
 ##########################  FUNCTION EXPLAINATION  ###################################
@@ -17,8 +16,7 @@ import datetime
 
 def treat_unSAfile(unSAfilePath,unSAfilename,unSAvarname,nhour,nrow,ncol):
     unSAdata = nc.Dataset(unSAfilePath + unSAfilename)
-    # varnames = list(data.variables.keys())  #read the nc variable name as a list
-    unSApol = unSAdata[unSAvarname][:744,0,:,:]
+    unSApol = unSAdata[unSAvarname][:nhour,0,:,:]
     unSAdata.close()
     nday = nhour // 24 - 1
     mda8list = np.zeros((nday,nrow,ncol),dtype = float)
@@ -88,7 +86,8 @@ def mda8Ind_2nc(mda8Ind,nhour,ncrow,ncol):
    # 这一行填写未源解析netCDF文件路径
 unSAfilePath = '/data3/liuhanqing/projects/postproc/2.combine/output/201807_OSAT/'   
    # 这一行填写未源解析netCDF文件名
-unSAfilename = 'camx.YRD4km.R1R2R3.201807.OSAT.sa.grd01.ncf'   
+# unSAfilename = 'camx.YRD4km.R1R2R3_new.201807.OSAT.sa.grd01.ncf'
+unSAfilename = 'camx.YRD4km.Suzhou_fin.201807.OSAT.sa.grd01.ncf'   
    # 总臭氧小时浓度的变量名                      
 unSAvarname = 'O3_R1R2R3'  
    # 网格规格和源解析小时数
